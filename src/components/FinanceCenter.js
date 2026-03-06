@@ -188,6 +188,7 @@ export default function FinanceCenter() {
                                 <th>Date</th>
                                 <th>Amount</th>
                                 <th>Receipt</th>
+                                <th>Approvals</th>
                                 <th>Status</th>
                                 {activeTab === 'pending' && <th>Action</th>}
                             </tr>
@@ -252,6 +253,21 @@ export default function FinanceCenter() {
                                             ) : (
                                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>—</span>
                                             )}
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                {exp.approvals?.filter(a => a.level !== 'finance').map(a => (
+                                                    <div key={a.level} style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        {a.status === 'approved' ? (
+                                                            <span style={{ color: 'var(--success-500)' }}>✓ {a.level.charAt(0).toUpperCase() + a.level.slice(1)}</span>
+                                                        ) : a.status === 'rejected' ? (
+                                                            <span style={{ color: 'var(--danger-500)' }}>✗ {a.level.charAt(0).toUpperCase() + a.level.slice(1)}</span>
+                                                        ) : (
+                                                            <span style={{ color: 'var(--warning-500)' }}>⏳ {a.level.charAt(0).toUpperCase() + a.level.slice(1)}</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </td>
                                         <td>
                                             <span className={`badge ${exp.status}`}>
