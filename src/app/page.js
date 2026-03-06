@@ -1,66 +1,68 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import { useState } from 'react';
+import { AppProvider, useApp } from '@/context/AppContext';
+import Sidebar from '@/components/Sidebar';
+import Header from '@/components/Header';
+import ToastContainer from '@/components/ToastContainer';
+import LoginPage from '@/components/LoginPage';
+import Dashboard from '@/components/Dashboard';
+import SubmitExpense from '@/components/SubmitExpense';
+import MyExpenses from '@/components/MyExpenses';
+import ApprovalQueue from '@/components/ApprovalQueue';
+import FinanceCenter from '@/components/FinanceCenter';
+import Policies from '@/components/Policies';
+import Reports from '@/components/Reports';
+import Notifications from '@/components/Notifications';
+
+const PAGE_TITLES = {
+  'dashboard': 'Dashboard',
+  'submit': 'Submit Expense',
+  'my-expenses': 'My Expenses',
+  'approvals': 'Approval Queue',
+  'finance': 'Finance Command Centre',
+  'policies': 'Policy & Limits',
+  'reports': 'Reports & Analytics',
+  'notifications': 'Notifications',
+};
+
+function AppContent() {
+  const { currentUser } = useApp();
+  const [activePage, setActivePage] = useState('dashboard');
+
+  if (!currentUser) {
+    return <LoginPage />;
+  }
+
+  const renderPage = () => {
+    switch (activePage) {
+      case 'dashboard': return <Dashboard />;
+      case 'submit': return <SubmitExpense onNavigate={setActivePage} />;
+      case 'my-expenses': return <MyExpenses />;
+      case 'approvals': return <ApprovalQueue />;
+      case 'finance': return <FinanceCenter />;
+      case 'policies': return <Policies />;
+      case 'reports': return <Reports />;
+      case 'notifications': return <Notifications />;
+      default: return <Dashboard />;
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <div className="main-content">
+        <Header title={PAGE_TITLES[activePage] || 'Dashboard'} onNavigate={setActivePage} />
+        {renderPage()}
+      </div>
+      <ToastContainer />
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }

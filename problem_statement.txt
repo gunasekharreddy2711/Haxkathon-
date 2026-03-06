@@ -1,0 +1,38 @@
+Problem Statement: Expense Management System "ExpensifyPro"
+Background:
+In a rapidly growing corporate environment, managing employee reimbursements efficiently is crucial for operational transparency and financial health. Currently, the organization relies on a fragmented, paper-based process for handling business expenses. This manual approach has led to delays in reimbursements, lack of policy compliance, and significant administrative burden on the Finance department. To address these challenges, the company aims to develop "ExpensifyPro," a centralized digital platform to streamline the end-to-end expense lifecycle.
+Challenge:
+As a developer on the "ExpensifyPro" project, your task is to design and implement a robust system that automates the expense reporting process. Your solution must address the following core functional gaps:
+Automated Workflow & Submission: Transition from manual, paper-based submissions to a digital interface where users can upload receipts and submit claims in real-time.
+Dynamic Approval Matrix: Implement a multi-level approval hierarchy (e.g., Manager -> HOD -> Finance) to ensure every claim is reviewed by the appropriate stakeholders.
+Categorization & Policy Enforcement: Define and enforce expense categories (Local Travel, Outstation, Food, etc.) and map them to User Grades. The system must automatically validate claims against predefined spending limits based on the employee's seniority.
+Auditability & Tracking: Create a "Live Tracking" feature allowing employees to see the status of their claims (Pending, Approved, Rejected, Settled) at any time.
+Financial Integration: Integrate the system with banking APIs to facilitate seamless, one-click claim settlements, reducing the manual entry load for the Finance team.
+Communication Engine: Develop a notification system to send real-time updates via Email and SMS for submission confirmations, approval alerts, and payment status.
+Objective to provide to Employees and Finance Team:
+The tool must provide the following features and data visibility:
+Employee Dashboard: Summary of total claimed vs. reimbursed amounts.
+Digital Receipt Vault: Ability to categorize expenses (Local Travel, Food, etc.) with image, Document, PDF uploads.
+Policy Violation/Guardrails: Real-time alerts if a claim exceeds the "User Grade" eligibility.
+Finance Command Centre: A dedicated portal for the Finance team to bulk-approve, audit, and trigger bank settlements.
+Automated Notifications: Instant alerts via SMS/Email for every stage of the claim process.
+Data:
+You will be provided with anonymized datasets, including:
+User Master Data: Employee roles, departments, and hierarchical grades.
+Policy Framework: Defined spending limits for each category (e.g., Grade A – Rs. 100 for Food, Grade B – Rs. 50).
+Historical Claims: Past expense data for testing categorization and trend analysis.
+Vendor/Category Master: Pre-defined lists of expense types and common vendors.
+Evaluation Criteria:
+Your contributions will be evaluated based on:
+Policy Accuracy: How effectively does the system catch over-budget or out-of-policy claims?
+Workflow Efficiency: Does the approval matrix route claims to the correct managers without bottlenecks?
+User Experience (UX): How intuitive is the submission process for a non-technical user?
+Integration Reliability: How securely and accurately does the system handle the simulated bank settlement data?
+System Scalability: Can the system handle a high volume of claims during month-end peaks?
+Code Quality: Adherence to clean coding standards and modular architecture.
+
+Deliverables:
+Software Implementation: A functional version of the "ExpensifyPro" platform focusing on the core modules mentioned above.
+Technical Documentation: A detailed report covering the database schema, approval logic, and API integration points.
+Presentation: A summary of how the solution solves the 8 key problem statements and the business impact (e.g., time saved for Finance).
+
