@@ -258,13 +258,13 @@ export function AppProvider({ children }) {
         })
       };
 
-      // Check if all approved
-      const allApproved = updated.approvals.every(a => a.status === 'approved');
-      if (allApproved) updated.status = 'approved';
-      else {
-        // Update status based on progress
-        const lastApproved = updated.approvals.filter(a => a.status === 'approved').length;
-        if (lastApproved > 0 && lastApproved < 3) updated.status = 'pending';
+      // Transition to 'approved' globally when HOD signs off, since Finance's job is solely 'settlement'
+      const isHodApproved = updated.approvals.find(a => a.level === 'hod')?.status === 'approved';
+      if (isHodApproved) {
+        updated.status = 'approved';
+      } else {
+        // Still moving through management queue
+        updated.status = 'pending';
       }
 
       return updated;
