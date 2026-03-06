@@ -95,8 +95,22 @@ export default function Notifications() {
                                 <div style={{ fontSize: '14px', fontWeight: notif.read ? 400 : 600, color: 'var(--text-primary)' }}>
                                     {notif.message}
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                    {formatTime(notif.date)}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                        {formatTime(notif.date)}
+                                    </span>
+                                    {(notif.channels || ['app']).map(ch => (
+                                        <span key={ch} style={{
+                                            fontSize: '10px',
+                                            padding: '2px 8px',
+                                            borderRadius: '999px',
+                                            fontWeight: 600,
+                                            background: ch === 'email' ? 'rgba(99, 102, 241, 0.15)' : ch === 'sms' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                                            color: ch === 'email' ? 'var(--primary-400)' : ch === 'sms' ? 'var(--success-400)' : 'var(--text-muted)',
+                                        }}>
+                                            {ch === 'email' ? '📧 Email' : ch === 'sms' ? '📱 SMS' : '🔔 App'}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                             {!notif.read && (

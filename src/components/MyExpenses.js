@@ -148,6 +148,62 @@ export default function MyExpenses() {
                             </div>
                         </div>
 
+                        {/* Receipt Preview in Tracking */}
+                        {selectedExpense.receiptData && (
+                            <div style={{
+                                background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)',
+                                padding: '16px', marginBottom: '24px',
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        Attached Receipt
+                                    </div>
+                                    <a
+                                        href={selectedExpense.receiptData}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-outline btn-sm"
+                                        style={{ fontSize: '11px', padding: '2px 8px' }}
+                                    >
+                                        🔍 View Full Size
+                                    </a>
+                                </div>
+                                {(selectedExpense.receiptType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(selectedExpense.receiptName || '')) ? (
+                                    <img
+                                        src={selectedExpense.receiptData}
+                                        alt="Receipt"
+                                        style={{
+                                            width: '100%',
+                                            maxHeight: '250px',
+                                            objectFit: 'contain',
+                                            borderRadius: 'var(--radius-sm)',
+                                            border: '1px solid var(--border-color)',
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>📄 {selectedExpense.receiptName}</span>
+                                        <a
+                                            href={selectedExpense.receiptData}
+                                            download={selectedExpense.receiptName}
+                                            className="btn btn-outline btn-sm"
+                                        >
+                                            ⬇ Download
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {selectedExpense.receiptName && !selectedExpense.receiptData && (
+                            <div style={{
+                                background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)',
+                                padding: '14px 16px', marginBottom: '24px',
+                                fontSize: '12px', color: 'var(--text-muted)',
+                            }}>
+                                📎 Receipt attached: {selectedExpense.receiptName} (preview not available)
+                            </div>
+                        )}
+
                         {/* Approval Progress */}
                         <div className="progress-tracker">
                             <div className="progress-step completed">
@@ -205,6 +261,39 @@ export default function MyExpenses() {
                                 );
                             })}
                         </div>
+
+                        {/* Settlement Details (for settled expenses) */}
+                        {selectedExpense.status === 'settled' && selectedExpense.settlement && (
+                            <div style={{
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid var(--success-400)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '16px',
+                                marginTop: '16px',
+                            }}>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--success-400)', marginBottom: '10px' }}>
+                                    💰 Payment Settled
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Payment Mode</div>
+                                        <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '2px' }}>{selectedExpense.settlement.paymentMode}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Transaction Ref</div>
+                                        <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 600, marginTop: '2px', color: 'var(--success-400)' }}>
+                                            {selectedExpense.settlement.txnRef}
+                                        </div>
+                                    </div>
+                                    <div style={{ gridColumn: 'span 2' }}>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Settlement Date</div>
+                                        <div style={{ fontSize: '13px', marginTop: '2px' }}>
+                                            {new Date(selectedExpense.settlement.settlementDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="modal-footer">
                             <button className="btn btn-outline" onClick={() => setSelectedExpense(null)}>Close</button>

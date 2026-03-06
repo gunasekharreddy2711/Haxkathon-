@@ -8,6 +8,7 @@ export default function ApprovalQueue() {
     const [rejectComment, setRejectComment] = useState('');
     const [approveComment, setApproveComment] = useState('');
     const [approveModal, setApproveModal] = useState(null);
+    const [receiptViewModal, setReceiptViewModal] = useState(null);
 
     const pendingApprovals = getPendingApprovals();
     const level = currentUser?.role === 'manager' ? 'manager' : currentUser?.role === 'hod' ? 'hod' : 'finance';
@@ -97,8 +98,37 @@ export default function ApprovalQueue() {
                                             </div>
                                             <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{exp.description}</div>
                                             {exp.receiptName && (
-                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    📎 {exp.receiptName}
+                                                <div style={{ marginTop: '10px' }}>
+                                                    {exp.receiptData && (exp.receiptType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(exp.receiptName || '')) ? (
+                                                        <div
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                                                            onClick={() => setReceiptViewModal(exp)}
+                                                        >
+                                                            <img
+                                                                src={exp.receiptData}
+                                                                alt="Receipt"
+                                                                style={{
+                                                                    width: '60px',
+                                                                    height: '60px',
+                                                                    objectFit: 'cover',
+                                                                    borderRadius: 'var(--radius-sm)',
+                                                                    border: '1px solid var(--border-color)',
+                                                                }}
+                                                            />
+                                                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--primary-400)' }}>
+                                                                🔍 View Receipt
+                                                            </button>
+                                                        </div>
+                                                    ) : exp.receiptData ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>📄 {exp.receiptName}</span>
+                                                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--primary-400)' }} onClick={() => setReceiptViewModal(exp)}>View</button>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            📎 {exp.receiptName}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -180,6 +210,72 @@ export default function ApprovalQueue() {
                         <div className="modal-footer">
                             <button className="btn btn-outline" onClick={() => setRejectModal(null)}>Cancel</button>
                             <button className="btn btn-danger" onClick={handleReject} disabled={!rejectComment.trim()}>Reject</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Receipt Lightbox Modal */}
+            {receiptViewModal && (
+                <div className="modal-overlay" onClick={() => setReceiptViewModal(null)} style={{ zIndex: 200 }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', padding: 0, overflow: 'hidden' }}>
+                        <div className="modal-header" style={{ padding: '16px 20px' }}>
+                            <div>
+                                <div className="modal-title">🧾 Receipt - {receiptViewModal.id}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                    {receiptViewModal.receiptName} · Submitted by {getUser(receiptViewModal.userId)?.name}
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setReceiptViewModal(null)}>✕</button>
+                        </div>
+                        <div style={{ padding: '0 20px 20px', textAlign: 'center' }}>
+                            <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+                                <a
+                                    href={receiptViewModal.receiptData}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-outline btn-sm"
+                                >
+                                    🔍 Open Full Original Receipt
+                                </a>
+                            </div>
+                            {receiptViewModal.receiptData && (receiptViewModal.receiptType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(receiptViewModal.receiptName || '')) ? (
+                                <img
+                                    src={receiptViewModal.receiptData}
+                                    alt="Receipt"
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '70vh',
+                                        objectFit: 'contain',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--border-color)',
+                                    }}
+                                />
+                            ) : receiptViewModal.receiptData ? (
+                                <div style={{
+                                    padding: '40px',
+                                    background: 'var(--bg-tertiary)',
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--text-muted)',
+                                }}>
+                                    📄 PDF document: {receiptViewModal.receiptName}
+                                    <br />
+                                    <a
+                                        href={receiptViewModal.receiptData}
+                                        download={receiptViewModal.receiptName}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-primary btn-sm"
+                                        style={{ marginTop: '16px', display: 'inline-flex' }}
+                                    >
+                                        ⬇ Download / View Document
+                                    </a>
+                                </div>
+                            ) : (
+                                <div style={{ padding: '40px', color: 'var(--text-muted)' }}>
+                                    No receipt data available (file name only: {receiptViewModal.receiptName})
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

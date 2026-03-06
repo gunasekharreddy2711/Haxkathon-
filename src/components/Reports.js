@@ -64,13 +64,145 @@ export default function Reports() {
         return dist;
     }, [expenses]);
 
+    const monthlyTrends = useMemo(() => {
+        const trends = {};
+        expenses.forEach(exp => {
+            const date = new Date(exp.date);
+            const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+            if (!trends[monthYear]) trends[monthYear] = { month: monthYear, total: 0 };
+            trends[monthYear].total += exp.amount;
+        });
+
+        // Sort chronologically (assuming sorting string 'Mon YYYY' doesn't strictly work, better to sort by actual date)
+        return Object.values(trends).sort((a, b) => new Date('1 ' + a.month) - new Date('1 ' + b.month)).slice(-6); // last 6 months
+    }, [expenses]);
+
+    // ========== EXPORT FUNCTIONS ==========
+
+    const exportCSV = () => {
+        const headers = ['Expense ID', 'Employee', 'Department', 'Grade', 'Category', 'Description', 'Amount', 'Date', 'Status', 'Manager Approval', 'HOD Approval', 'Finance Approval', 'Receipt'];
+        const rows = expenses.map(exp => {
+            const user = getUser(exp.userId);
+            const cat = categories.find(c => c.id === exp.categoryId);
+            const managerApproval = exp.approvals.find(a => a.level === 'manager');
+            const hodApproval = exp.approvals.find(a => a.level === 'hod');
+            const financeApproval = exp.approvals.find(a => a.level === 'finance');
+            return [
+                exp.id,
+                user?.name || 'N/A',
+                user?.department || 'N/A',
+                user?.grade || 'N/A',
+                cat?.name || 'N/A',
+                '"' + exp.description.replace(/"/g, '""') + '"',
+                exp.amount,
+                exp.date,
+                exp.status.toUpperCase(),
+                managerApproval?.status || 'pending',
+                hodApproval?.status || 'pending',
+                financeApproval?.status || 'pending',
+                exp.receiptName || 'No receipt',
+            ].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'ExpensifyPro_Report_' + new Date().toISOString().split('T')[0] + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const exportPDF = () => {
+        const printWindow = window.open('', '_blank');
+        const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        const expenseRows = expenses.map(exp => {
+            const user = getUser(exp.userId);
+            const cat = categories.find(c => c.id === exp.categoryId);
+            const statusColor = exp.status === 'settled' ? '#10b981' : exp.status === 'approved' ? '#34d399' : exp.status === 'rejected' ? '#ef4444' : '#f59e0b';
+            return '<tr>' +
+                '<td style="font-family:monospace;font-size:11px;">' + exp.id + '</td>' +
+                '<td>' + (user?.name || 'N/A') + '</td>' +
+                '<td>' + (user?.department || 'N/A') + '</td>' +
+                '<td>' + (cat?.name || 'N/A') + '</td>' +
+                '<td style="font-weight:600;">₹' + exp.amount.toLocaleString('en-IN') + '</td>' +
+                '<td>' + exp.date + '</td>' +
+                '<td><span style="color:' + statusColor + ';font-weight:600;text-transform:uppercase;">' + exp.status + '</span></td>' +
+                '<td>' + (exp.receiptName || '—') + '</td>' +
+                '</tr>';
+        }).join('');
+
+        const categoryRowsHTML = categoryStats.map(cat =>
+            '<tr><td>' + cat.name + '</td><td>' + cat.count + '</td><td>' + cat.approved + '</td><td>' + cat.rejected + '</td><td style="font-weight:700;">₹' + cat.total.toLocaleString('en-IN') + '</td></tr>'
+        ).join('');
+
+        const deptRowsHTML = departmentStats.map(dept =>
+            '<tr><td>' + dept.name + '</td><td>' + dept.employees + '</td><td>' + dept.count + '</td><td style="font-weight:700;">₹' + dept.total.toLocaleString('en-IN') + '</td></tr>'
+        ).join('');
+
+        const html = '<!DOCTYPE html><html><head><title>ExpensifyPro Report - ' + today + '</title>' +
+            '<style>' +
+            '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+            'body { font-family: "Segoe UI", Arial, sans-serif; color: #1e293b; padding: 40px; font-size: 13px; }' +
+            '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }' +
+            '.header h1 { font-size: 24px; color: #4f46e5; }' +
+            '.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }' +
+            '.summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; }' +
+            '.summary-card .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }' +
+            '.summary-card .value { font-size: 22px; font-weight: 700; color: #1e293b; }' +
+            'h2 { font-size: 16px; color: #334155; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }' +
+            'table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }' +
+            'th { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid #e2e8f0; }' +
+            'td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }' +
+            'tr:hover td { background: #f8fafc; }' +
+            '.footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; }' +
+            '@media print { body { padding: 20px; } .no-print { display: none; } }' +
+            '</style></head><body>' +
+            '<div class="header"><div><h1>ExpensifyPro</h1><div style="color:#64748b;margin-top:4px;">Expense Management Report</div></div><div style="color:#64748b;font-size:13px;">Generated: ' + today + '</div></div>' +
+            '<div class="summary-grid">' +
+            '<div class="summary-card"><div class="label">Total Claims</div><div class="value">' + formatCurrency(stats.total) + '</div><div style="font-size:11px;color:#64748b;margin-top:4px;">' + stats.count + ' claims</div></div>' +
+            '<div class="summary-card"><div class="label">Settled</div><div class="value" style="color:#10b981;">' + formatCurrency(stats.settled) + '</div></div>' +
+            '<div class="summary-card"><div class="label">Pending</div><div class="value" style="color:#f59e0b;">' + formatCurrency(stats.pending) + '</div></div>' +
+            '<div class="summary-card"><div class="label">Rejected</div><div class="value" style="color:#ef4444;">' + formatCurrency(stats.rejected) + '</div></div>' +
+            '</div>' +
+            '<h2>All Expense Claims</h2>' +
+            '<table><thead><tr><th>ID</th><th>Employee</th><th>Dept</th><th>Category</th><th>Amount</th><th>Date</th><th>Status</th><th>Receipt</th></tr></thead>' +
+            '<tbody>' + expenseRows + '</tbody></table>' +
+            '<h2>Category Breakdown</h2>' +
+            '<table><thead><tr><th>Category</th><th>Claims</th><th>Approved</th><th>Rejected</th><th>Total</th></tr></thead>' +
+            '<tbody>' + categoryRowsHTML + '</tbody></table>' +
+            '<h2>Department Summary</h2>' +
+            '<table><thead><tr><th>Department</th><th>Employees</th><th>Claims</th><th>Total</th></tr></thead>' +
+            '<tbody>' + deptRowsHTML + '</tbody></table>' +
+            '<div class="footer">ExpensifyPro Expense Management System | Confidential Report | ' + today + '</div>' +
+            '<div class="no-print" style="text-align:center;margin-top:24px;"><button onclick="window.print()" style="padding:10px 24px;background:#4f46e5;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;">Print / Save as PDF</button></div>' +
+            '</body></html>';
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+    };
+
     return (
         <div className="page-container">
-            <div style={{ marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '4px' }}>📈 Reports & Analytics</h1>
-                <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-                    Insights and trends across expense claims
-                </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+                <div>
+                    <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '4px' }}>📈 Reports & Analytics</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                        Insights and trends across expense claims
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn btn-outline btn-sm" onClick={exportCSV} title="Download CSV spreadsheet">
+                        📥 Export CSV
+                    </button>
+                    <button className="btn btn-primary btn-sm" onClick={exportPDF} title="Generate printable PDF report">
+                        📄 Export PDF
+                    </button>
+                </div>
             </div>
 
             {/* Overview Stats */}
@@ -181,6 +313,48 @@ export default function Reports() {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Monthly Trend Analysis */}
+                <div className="card" style={{ gridColumn: '1 / -1' }}>
+                    <div className="card-header">
+                        <div>
+                            <div className="card-title">Monthly Trend Analysis</div>
+                            <div className="card-subtitle">Historical claims over the last 6 months</div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '200px', gap: '20px', padding: '10px 0' }}>
+                        {monthlyTrends.map((trend, i) => {
+                            const maxTrend = Math.max(...monthlyTrends.map(t => t.total)) || 1;
+                            const heightPct = Math.max((trend.total / maxTrend) * 100, 5); // min 5% height
+                            return (
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
+                                    <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%', padding: '0 10%' }}>
+                                        <div style={{
+                                            width: '100%', height: `${heightPct}%`,
+                                            background: 'linear-gradient(0deg, var(--primary-400), var(--primary-300))',
+                                            borderRadius: '6px 6px 0 0',
+                                            transition: 'height 1s ease',
+                                            position: 'relative'
+                                        }}>
+                                            <div style={{
+                                                position: 'absolute', top: '-25px', width: '100%', textAlign: 'center',
+                                                fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)'
+                                            }}>
+                                                {formatCurrency(trend.total)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                        {trend.month}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {monthlyTrends.length === 0 && (
+                            <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)' }}>No historical data available</div>
+                        )}
                     </div>
                 </div>
 

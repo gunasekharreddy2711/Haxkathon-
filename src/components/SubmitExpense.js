@@ -7,12 +7,16 @@ export default function SubmitExpense({ onNavigate }) {
     const [formData, setFormData] = useState({
         categoryId: '',
         amount: '',
+        vendor: '',
         description: '',
         date: new Date().toISOString().split('T')[0],
         receiptName: null,
+        receiptData: null,
+        receiptType: null,
     });
     const [policyWarning, setPolicyWarning] = useState(null);
     const [errors, setErrors] = useState({});
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -35,11 +39,68 @@ export default function SubmitExpense({ onNavigate }) {
         }
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setFormData(prev => ({ ...prev, receiptName: file.name }));
+            if (file.size > 10 * 1024 * 1024) {
+                setErrors(prev => ({ ...prev, receipt: 'File size must be under 10MB' }));
+                return;
+            }
+
+            setIsUploading(true);
+            const uploadData = new FormData();
+            uploadData.append('userId', currentUser?.id?.toString() || 'unknown');
+            uploadData.append('userName', currentUser?.name || 'unknown');
+            uploadData.append('receipt', file);
+
+            try {
+                const res = await fetch('http://localhost:3001/api/upload', {
+                    method: 'POST',
+                    body: uploadData,
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    setFormData(prev => ({
+                        ...prev,
+                        receiptName: file.name,
+                        receiptData: result.fileUrl,
+                        receiptType: file.type,
+                    }));
+                    if (result.extractedText && !formData.description) {
+                        // Fill description with a snippet of OCR text if empty
+                        setFormData(prev => ({
+                            ...prev,
+                            description: `OCR snippet: ${result.extractedText.substring(0, 50)}...`
+                        }));
+                    }
+                    setErrors(prev => ({ ...prev, receipt: null }));
+                } else {
+                    setErrors(prev => ({ ...prev, receipt: result.error || 'Failed to upload' }));
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                setErrors(prev => ({ ...prev, receipt: 'Server error uploading file (is the backend running?)' }));
+
+                // Fallback to local preview if server is unreachable
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setFormData(prev => ({
+                        ...prev,
+                        receiptName: file.name,
+                        receiptData: reader.result,
+                        receiptType: file.type,
+                    }));
+                };
+                reader.readAsDataURL(file);
+            } finally {
+                setIsUploading(false);
+            }
         }
+    };
+
+    const removeReceipt = () => {
+        setFormData(prev => ({ ...prev, receiptName: null, receiptData: null, receiptType: null }));
     };
 
     const validate = () => {
@@ -62,10 +123,12 @@ export default function SubmitExpense({ onNavigate }) {
             description: formData.description,
             date: formData.date,
             receiptName: formData.receiptName,
+            receiptData: formData.receiptData,
+            receiptType: formData.receiptType,
         });
 
         // Reset
-        setFormData({ categoryId: '', amount: '', description: '', date: new Date().toISOString().split('T')[0], receiptName: null });
+        setFormData({ categoryId: '', amount: '', vendor: '', description: '', date: new Date().toISOString().split('T')[0], receiptName: null, receiptData: null, receiptType: null });
         setPolicyWarning(null);
 
         setTimeout(() => onNavigate('my-expenses'), 500);
@@ -134,6 +197,19 @@ export default function SubmitExpense({ onNavigate }) {
                             </div>
                         </div>
 
+                        {/* Vendor */}
+                        <div className="form-group">
+                            <label className="form-label">Vendor / Merchant</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="e.g., Uber, Zomato, Amazon, Taj Hotels..."
+                                value={formData.vendor}
+                                onChange={e => handleChange('vendor', e.target.value)}
+                            />
+                            <div className="form-hint">Name of the merchant or service provider</div>
+                        </div>
+
                         {/* Description */}
                         <div className="form-group">
                             <label className="form-label">Description *</label>
@@ -151,8 +227,14 @@ export default function SubmitExpense({ onNavigate }) {
                         <div className="form-group">
                             <label className="form-label">Upload Receipt</label>
                             <label className="file-upload">
-                                <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleFileChange} />
-                                {formData.receiptName ? (
+                                <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleFileChange} disabled={isUploading} />
+                                {isUploading ? (
+                                    <>
+                                        <div className="file-upload-icon spinner">⏳</div>
+                                        <div className="file-upload-text">Uploading & Extracting text...</div>
+                                        <div className="file-upload-hint">Please wait</div>
+                                    </>
+                                ) : formData.receiptName ? (
                                     <>
                                         <div className="file-upload-icon">📄</div>
                                         <div className="file-upload-text">{formData.receiptName}</div>
@@ -166,7 +248,79 @@ export default function SubmitExpense({ onNavigate }) {
                                     </>
                                 )}
                             </label>
+                            {errors.receipt && <div className="form-error">{errors.receipt}</div>}
                         </div>
+
+                        {/* Receipt Preview */}
+                        {formData.receiptData && (
+                            <div className="form-group">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ margin: 0 }}>Receipt Preview</label>
+                                    <a
+                                        href={formData.receiptData}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-outline btn-sm"
+                                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                                    >
+                                        🔍 Open Full Size
+                                    </a>
+                                </div>
+                                <div style={{
+                                    position: 'relative',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-md)',
+                                    overflow: 'hidden',
+                                    background: 'var(--bg-tertiary)',
+                                }}>
+                                    {(formData.receiptType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(formData.receiptName || '')) ? (
+                                        <img
+                                            src={formData.receiptData}
+                                            alt="Receipt preview"
+                                            style={{
+                                                width: '100%',
+                                                maxHeight: '300px',
+                                                objectFit: 'contain',
+                                                display: 'block',
+                                            }}
+                                        />
+                                    ) : (
+                                        <div style={{
+                                            padding: '24px',
+                                            textAlign: 'center',
+                                            color: 'var(--text-muted)',
+                                            fontSize: '13px',
+                                        }}>
+                                            📄 PDF file attached: {formData.receiptName}
+                                        </div>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.preventDefault(); removeReceipt(); }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            width: '28px',
+                                            height: '28px',
+                                            borderRadius: '50%',
+                                            background: 'rgba(239, 68, 68, 0.9)',
+                                            color: 'white',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '14px',
+                                            fontWeight: 700,
+                                        }}
+                                        title="Remove receipt"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Policy Warning */}
                         {policyWarning && (

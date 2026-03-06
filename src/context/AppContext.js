@@ -54,12 +54,14 @@ const POLICY_LIMITS = [
   { grade: 'C', categoryId: 8, limit: 300, period: 'per_month' },
 ];
 
-const generateExpenseId = () => 'EXP-' + String(Math.floor(100000 + Math.random() * 900000));
+let expenseCounter = 1000;
+const generateExpenseId = () => 'EXP-' + String(++expenseCounter);
 
 const INITIAL_EXPENSES = [
   {
-    id: generateExpenseId(), userId: 1, categoryId: 3, amount: 250, description: 'Team lunch at client office',
+    id: 'EXP-001', userId: 1, categoryId: 3, amount: 250, description: 'Team lunch at client office',
     date: '2026-03-01', status: 'approved', receiptName: 'lunch_receipt.jpg',
+    receiptData: null, receiptType: null,
     isGroupExpense: false, sharedWith: [],
     approvals: [
       { level: 'manager', userId: 3, status: 'approved', date: '2026-03-02', comment: 'Approved - client meeting lunch' },
@@ -69,8 +71,9 @@ const INITIAL_EXPENSES = [
     createdAt: '2026-03-01T10:30:00',
   },
   {
-    id: generateExpenseId(), userId: 1, categoryId: 1, amount: 450, description: 'Cab to client site for product demo',
+    id: 'EXP-002', userId: 1, categoryId: 1, amount: 450, description: 'Cab to client site for product demo',
     date: '2026-02-28', status: 'settled', receiptName: 'cab_receipt.pdf',
+    receiptData: null, receiptType: null,
     isGroupExpense: false, sharedWith: [],
     approvals: [
       { level: 'manager', userId: 3, status: 'approved', date: '2026-02-28', comment: 'OK' },
@@ -80,8 +83,9 @@ const INITIAL_EXPENSES = [
     createdAt: '2026-02-28T09:15:00',
   },
   {
-    id: generateExpenseId(), userId: 2, categoryId: 2, amount: 3500, description: 'Flight to Mumbai for trade show',
+    id: 'EXP-003', userId: 2, categoryId: 2, amount: 3500, description: 'Flight to Mumbai for trade show',
     date: '2026-02-25', status: 'pending', receiptName: 'flight_ticket.pdf',
+    receiptData: null, receiptType: null,
     isGroupExpense: false, sharedWith: [],
     approvals: [
       { level: 'manager', userId: 3, status: 'pending', date: null, comment: null },
@@ -91,8 +95,9 @@ const INITIAL_EXPENSES = [
     createdAt: '2026-02-25T14:20:00',
   },
   {
-    id: generateExpenseId(), userId: 4, categoryId: 4, amount: 800, description: 'Ergonomic keyboard and mouse',
+    id: 'EXP-004', userId: 4, categoryId: 4, amount: 800, description: 'Ergonomic keyboard and mouse',
     date: '2026-02-20', status: 'rejected', receiptName: 'amazon_invoice.pdf',
+    receiptData: null, receiptType: null,
     isGroupExpense: false, sharedWith: [],
     approvals: [
       { level: 'manager', userId: 7, status: 'approved', date: '2026-02-21', comment: 'Needed for work' },
@@ -102,8 +107,9 @@ const INITIAL_EXPENSES = [
     createdAt: '2026-02-20T11:00:00',
   },
   {
-    id: generateExpenseId(), userId: 8, categoryId: 5, amount: 2800, description: 'Client dinner at Taj Hotel',
+    id: 'EXP-005', userId: 8, categoryId: 5, amount: 2800, description: 'Client dinner at Taj Hotel',
     date: '2026-03-03', status: 'pending', receiptName: 'hotel_bill.jpg',
+    receiptData: null, receiptType: null,
     isGroupExpense: false, sharedWith: [],
     approvals: [
       { level: 'manager', userId: 3, status: 'approved', date: '2026-03-04', comment: 'Important client' },
@@ -112,43 +118,11 @@ const INITIAL_EXPENSES = [
     ],
     createdAt: '2026-03-03T22:00:00',
   },
-  {
-    id: generateExpenseId(), userId: 1, categoryId: 6, amount: 999, description: 'Monthly mobile recharge - business plan',
-    date: '2026-02-15', status: 'settled', receiptName: 'recharge_receipt.png',
-    isGroupExpense: false, sharedWith: [],
-    approvals: [
-      { level: 'manager', userId: 3, status: 'approved', date: '2026-02-16', comment: 'Regular expense' },
-      { level: 'hod', userId: 5, status: 'approved', date: '2026-02-17', comment: 'OK' },
-      { level: 'finance', userId: 6, status: 'approved', date: '2026-02-18', comment: 'NEFT done' },
-    ],
-    createdAt: '2026-02-15T16:45:00',
-  },
-  {
-    id: generateExpenseId(), userId: 2, categoryId: 3, amount: 180, description: 'Working lunch during campaign shoot',
-    date: '2026-03-04', status: 'pending', receiptName: 'food_bill.jpg',
-    isGroupExpense: false, sharedWith: [],
-    approvals: [
-      { level: 'manager', userId: 3, status: 'pending', date: null, comment: null },
-      { level: 'hod', userId: 5, status: 'pending', date: null, comment: null },
-      { level: 'finance', userId: 6, status: 'pending', date: null, comment: null },
-    ],
-    createdAt: '2026-03-04T13:30:00',
-  },
-  {
-    id: generateExpenseId(), userId: 8, categoryId: 1, amount: 220, description: 'Auto fare to warehouse for stock check',
-    date: '2026-03-05', status: 'pending', receiptName: null,
-    isGroupExpense: false, sharedWith: [],
-    approvals: [
-      { level: 'manager', userId: 3, status: 'pending', date: null, comment: null },
-      { level: 'hod', userId: 5, status: 'pending', date: null, comment: null },
-      { level: 'finance', userId: 6, status: 'pending', date: null, comment: null },
-    ],
-    createdAt: '2026-03-05T08:00:00',
-  },
-  // === GROUP / SHARED EXPENSES ===
+  // === GROUP / SHARED EXPENSE ===
   {
     id: 'EXP-GRP001', userId: 3, categoryId: 3, amount: 1500, description: 'Sales team dinner at Mainland China - celebrating Q4 targets',
     date: '2026-03-05', status: 'awaiting_confirmation', receiptName: 'dinner_bill.jpg',
+    receiptData: null, receiptType: null,
     isGroupExpense: true,
     splitType: 'equal',
     sharedWith: [
@@ -163,30 +137,14 @@ const INITIAL_EXPENSES = [
     ],
     createdAt: '2026-03-05T20:30:00',
   },
-  {
-    id: 'EXP-GRP002', userId: 1, categoryId: 5, amount: 2200, description: 'Client lunch with Bajaj team at ITC Grand',
-    date: '2026-03-04', status: 'pending', receiptName: 'itc_bill.jpg',
-    isGroupExpense: true,
-    splitType: 'custom',
-    sharedWith: [
-      { userId: 3, shareAmount: 800, status: 'confirmed', confirmedAt: '2026-03-04T15:30:00' },
-      { userId: 8, shareAmount: 500, status: 'confirmed', confirmedAt: '2026-03-04T16:00:00' },
-    ],
-    approvals: [
-      { level: 'manager', userId: 3, status: 'pending', date: null, comment: null },
-      { level: 'hod', userId: 5, status: 'pending', date: null, comment: null },
-      { level: 'finance', userId: 6, status: 'pending', date: null, comment: null },
-    ],
-    createdAt: '2026-03-04T14:00:00',
-  },
 ];
 
 const NOTIFICATIONS_INITIAL = [
-  { id: 1, userId: 1, message: 'Your expense EXP-001 has been approved by Amit Kumar', type: 'success', read: false, date: '2026-03-05T14:30:00' },
-  { id: 2, userId: 3, message: 'New expense submitted by Priya Patel needs your review', type: 'info', read: false, date: '2026-03-04T15:00:00' },
-  { id: 3, userId: 6, message: '3 expenses are ready for final settlement', type: 'warning', read: false, date: '2026-03-05T09:00:00' },
-  { id: 4, userId: 1, message: 'Your expense for Cab Travel has been settled', type: 'success', read: true, date: '2026-03-02T16:00:00' },
-  { id: 5, userId: 5, message: 'Client dinner expense from Meera Nair requires HOD approval', type: 'info', read: false, date: '2026-03-04T10:00:00' },
+  { id: 1, userId: 1, message: 'Your expense EXP-001 has been approved by Amit Kumar', type: 'success', read: false, date: '2026-03-05T14:30:00', channels: ['app', 'email'] },
+  { id: 2, userId: 3, message: 'New expense submitted by Priya Patel needs your review', type: 'info', read: false, date: '2026-03-04T15:00:00', channels: ['app', 'email', 'sms'] },
+  { id: 3, userId: 6, message: '3 expenses are ready for final settlement', type: 'warning', read: false, date: '2026-03-05T09:00:00', channels: ['app', 'email'] },
+  { id: 4, userId: 1, message: 'Your expense for Cab Travel has been settled. Ref: NEFT20260302', type: 'success', read: true, date: '2026-03-02T16:00:00', channels: ['app', 'email', 'sms'] },
+  { id: 5, userId: 5, message: 'Client dinner expense from Meera Nair requires HOD approval', type: 'info', read: false, date: '2026-03-04T10:00:00', channels: ['app', 'email'] },
 ];
 
 export function AppProvider({ children }) {
@@ -259,7 +217,7 @@ export function AppProvider({ children }) {
     if (policy && expense.amount > policy.limit) {
       addToast(`⚠️ Warning: Amount ₹${expense.amount} exceeds policy limit of ₹${policy.limit} for your grade`, 'warning');
       setNotifications(prev => [
-        { id: Date.now(), userId: user.id, message: `Policy violation: Your ${CATEGORIES.find(c => c.id === expense.categoryId)?.name} expense of ₹${expense.amount} exceeds the limit of ₹${policy.limit} for Grade ${user.grade}`, type: 'warning', read: false, date: new Date().toISOString() },
+        { id: Date.now(), userId: user.id, message: `Policy violation: Your ${CATEGORIES.find(c => c.id === expense.categoryId)?.name} expense of ₹${expense.amount} exceeds the limit of ₹${policy.limit} for Grade ${user.grade}`, type: 'warning', read: false, date: new Date().toISOString(), channels: ['app', 'email', 'sms'] },
         ...prev,
       ]);
     } else {
@@ -282,7 +240,7 @@ export function AppProvider({ children }) {
     // Notify manager (only for non-group or if not awaiting)
     if (!isGroup && manager) {
       setNotifications(prev => [
-        { id: Date.now() + 1, userId: manager.id, message: `New expense of ₹${expense.amount} submitted by ${user.name}`, type: 'info', read: false, date: new Date().toISOString() },
+        { id: Date.now() + 1, userId: manager.id, message: `New expense of ₹${expense.amount} submitted by ${user.name}`, type: 'info', read: false, date: new Date().toISOString(), channels: ['app', 'email'] },
         ...prev,
       ]);
     }
@@ -316,7 +274,7 @@ export function AppProvider({ children }) {
     if (expense) {
       const employee = USERS.find(u => u.id === expense.userId);
       setNotifications(prev => [
-        { id: Date.now(), userId: expense.userId, message: `Your expense ${expenseId} has been approved at ${level} level`, type: 'success', read: false, date: new Date().toISOString() },
+        { id: Date.now(), userId: expense.userId, message: `Your expense ${expenseId} has been approved at ${level} level`, type: 'success', read: false, date: new Date().toISOString(), channels: ['app', 'email'] },
         ...prev,
       ]);
     }
@@ -340,29 +298,45 @@ export function AppProvider({ children }) {
     addToast('❌ Expense rejected', 'error');
   }, [addToast]);
 
-  const settleExpense = useCallback((expenseId) => {
+  const settleExpense = useCallback((expenseId, paymentMode = 'NEFT') => {
+    const txnRef = paymentMode.toUpperCase() + Date.now().toString().slice(-8);
+    const settlementDate = new Date().toISOString();
+
     setExpenses(prev => prev.map(exp => {
       if (exp.id !== expenseId) return exp;
       return {
         ...exp,
         status: 'settled',
+        settlement: {
+          txnRef,
+          paymentMode,
+          settlementDate,
+          settledBy: currentUser?.id || 6,
+        },
         approvals: exp.approvals.map(a => {
           if (a.level !== 'finance') return a;
-          return { ...a, status: 'approved', date: new Date().toISOString().split('T')[0], comment: 'Settled via bank transfer' };
+          return { ...a, status: 'approved', date: settlementDate.split('T')[0], comment: `Settled via ${paymentMode} | Ref: ${txnRef}` };
         }),
       };
     }));
 
     const expense = expenses.find(e => e.id === expenseId);
     if (expense) {
+      const employee = USERS.find(u => u.id === expense.userId);
+      // In-app notification
       setNotifications(prev => [
-        { id: Date.now(), userId: expense.userId, message: `Your expense ${expenseId} of ₹${expense.amount} has been settled!`, type: 'success', read: false, date: new Date().toISOString() },
+        { id: Date.now(), userId: expense.userId, message: `💰 Your expense ${expenseId} of ₹${expense.amount} has been settled via ${paymentMode}! Ref: ${txnRef}`, type: 'success', read: false, date: settlementDate, channels: ['app', 'email', 'sms'] },
+        ...prev,
+      ]);
+      // Simulated Email notification
+      setNotifications(prev => [
+        { id: Date.now() + 1, userId: expense.userId, message: `📧 Email sent to ${employee?.email}: Payment of ₹${expense.amount} credited. Reference: ${txnRef}`, type: 'info', read: false, date: settlementDate, channels: ['email'] },
         ...prev,
       ]);
     }
 
-    addToast('💰 Expense settled via bank transfer!', 'success');
-  }, [expenses, addToast]);
+    addToast(`💰 Expense settled via ${paymentMode}! Ref: ${txnRef}`, 'success');
+  }, [expenses, currentUser, addToast]);
 
   const markNotificationRead = useCallback((notifId) => {
     setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));

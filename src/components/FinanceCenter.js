@@ -7,6 +7,9 @@ export default function FinanceCenter() {
     const [activeTab, setActiveTab] = useState('pending');
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState('');
+    const [receiptViewModal, setReceiptViewModal] = useState(null);
+    const [settleModal, setSettleModal] = useState(null);
+    const [paymentMode, setPaymentMode] = useState('NEFT');
 
     const formatCurrency = (amt) => '₹' + amt.toLocaleString('en-IN');
     const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -62,13 +65,20 @@ export default function FinanceCenter() {
     };
 
     const handleBulkSettle = () => {
-        selectedIds.forEach(id => settleExpense(id));
+        selectedIds.forEach(id => settleExpense(id, paymentMode));
         setSelectedIds([]);
     };
 
     const handleSettle = (id) => {
-        settleExpense(id);
-        setSelectedIds(prev => prev.filter(x => x !== id));
+        setSettleModal(id);
+    };
+
+    const confirmSettle = () => {
+        if (settleModal) {
+            settleExpense(settleModal, paymentMode);
+            setSelectedIds(prev => prev.filter(x => x !== settleModal));
+            setSettleModal(null);
+        }
     };
 
     return (
@@ -177,6 +187,7 @@ export default function FinanceCenter() {
                                 <th>Description</th>
                                 <th>Date</th>
                                 <th>Amount</th>
+                                <th>Receipt</th>
                                 <th>Status</th>
                                 {activeTab === 'pending' && <th>Action</th>}
                             </tr>
@@ -222,6 +233,27 @@ export default function FinanceCenter() {
                                         <td style={{ whiteSpace: 'nowrap', fontSize: '13px' }}>{formatDate(exp.date)}</td>
                                         <td style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px' }}>{formatCurrency(exp.amount)}</td>
                                         <td>
+                                            {exp.receiptData && (exp.receiptType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(exp.receiptName || '')) ? (
+                                                <img
+                                                    src={exp.receiptData}
+                                                    alt="Receipt"
+                                                    onClick={() => setReceiptViewModal(exp)}
+                                                    style={{
+                                                        width: '36px',
+                                                        height: '36px',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid var(--border-color)',
+                                                        cursor: 'pointer',
+                                                    }}
+                                                />
+                                            ) : exp.receiptName ? (
+                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📎 {exp.receiptName}</span>
+                                            ) : (
+                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>—</span>
+                                            )}
+                                        </td>
+                                        <td>
                                             <span className={`badge ${exp.status}`}>
                                                 <span className="badge-dot"></span>
                                                 {exp.status}
@@ -254,9 +286,155 @@ export default function FinanceCenter() {
                     <span style={{ fontSize: '14px', fontWeight: 600 }}>
                         {selectedIds.length} selected · {formatCurrency(readyForSettlement.filter(e => selectedIds.includes(e.id)).reduce((s, e) => s + e.amount, 0))}
                     </span>
-                    <button className="btn btn-success" onClick={handleBulkSettle}>
-                        💰 Settle All via Bank Transfer
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <select
+                            value={paymentMode}
+                            onChange={(e) => setPaymentMode(e.target.value)}
+                            style={{
+                                padding: '8px 14px',
+                                borderRadius: 'var(--radius-md)',
+                                background: 'var(--bg-tertiary)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-color)',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                            }}
+                        >
+                            <option value="NEFT">🏦 NEFT</option>
+                            <option value="RTGS">⚡ RTGS</option>
+                            <option value="UPI">📱 UPI</option>
+                        </select>
+                        <button className="btn btn-success" onClick={handleBulkSettle}>
+                            💰 Settle All
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Settlement Confirmation Modal */}
+            {settleModal && (() => {
+                const exp = expenses.find(e => e.id === settleModal);
+                const employee = exp ? getUser(exp.userId) : null;
+                return (
+                    <div className="modal-overlay" onClick={() => setSettleModal(null)}>
+                        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+                            <div className="modal-header">
+                                <div className="modal-title">🏦 Confirm Settlement</div>
+                                <button className="modal-close" onClick={() => setSettleModal(null)}>✕</button>
+                            </div>
+                            {exp && (
+                                <div style={{ padding: '0 24px' }}>
+                                    <div style={{
+                                        background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)',
+                                        padding: '16px', marginBottom: '16px',
+                                    }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Employee</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 600, marginTop: '2px' }}>{employee?.name}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Amount</div>
+                                                <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--success-400)', marginTop: '2px' }}>{formatCurrency(exp.amount)}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Expense ID</div>
+                                                <div style={{ fontSize: '13px', fontFamily: 'monospace', marginTop: '2px' }}>{exp.id}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Department</div>
+                                                <div style={{ fontSize: '13px', marginTop: '2px' }}>{employee?.department}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Payment Mode</label>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            {['NEFT', 'RTGS', 'UPI'].map(mode => (
+                                                <button
+                                                    key={mode}
+                                                    className={`btn ${paymentMode === mode ? 'btn-primary' : 'btn-outline'} btn-sm`}
+                                                    onClick={() => setPaymentMode(mode)}
+                                                    style={{ flex: 1 }}
+                                                >
+                                                    {mode === 'NEFT' ? '🏦' : mode === 'RTGS' ? '⚡' : '📱'} {mode}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{
+                                        background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-400)',
+                                        borderRadius: 'var(--radius-md)', padding: '12px', marginTop: '8px', marginBottom: '8px',
+                                        fontSize: '12px', color: 'var(--success-400)',
+                                    }}>
+                                        ✅ Payment will be processed via {paymentMode} to {employee?.name}'s registered bank account. A transaction reference will be generated automatically.
+                                    </div>
+                                </div>
+                            )}
+                            <div className="modal-footer">
+                                <button className="btn btn-outline" onClick={() => setSettleModal(null)}>Cancel</button>
+                                <button className="btn btn-success" onClick={confirmSettle}>
+                                    💰 Settle via {paymentMode}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* Receipt Lightbox Modal */}
+            {receiptViewModal && (
+                <div className="modal-overlay" onClick={() => setReceiptViewModal(null)} style={{ zIndex: 200 }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', padding: 0, overflow: 'hidden' }}>
+                        <div className="modal-header" style={{ padding: '16px 20px' }}>
+                            <div>
+                                <div className="modal-title">🧾 Receipt - {receiptViewModal.id}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                    {receiptViewModal.receiptName} · {getUser(receiptViewModal.userId)?.name}
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setReceiptViewModal(null)}>✕</button>
+                        </div>
+                        <div style={{ padding: '0 20px 20px', textAlign: 'center' }}>
+                            <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+                                <a
+                                    href={receiptViewModal.receiptData}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-outline btn-sm"
+                                >
+                                    🔍 Open Full Original Receipt
+                                </a>
+                            </div>
+                            {receiptViewModal.receiptData && (receiptViewModal.receiptType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(receiptViewModal.receiptName || '')) ? (
+                                <img
+                                    src={receiptViewModal.receiptData}
+                                    alt="Receipt"
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '70vh',
+                                        objectFit: 'contain',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--border-color)',
+                                    }}
+                                />
+                            ) : (
+                                <div style={{ padding: '40px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
+                                    📄 {receiptViewModal.receiptName}
+                                    <br />
+                                    <a
+                                        href={receiptViewModal.receiptData}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-primary btn-sm"
+                                        style={{ marginTop: '16px', display: 'inline-flex' }}
+                                    >
+                                        ⬇ Download / View Document
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
