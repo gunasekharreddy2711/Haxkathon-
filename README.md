@@ -1,3 +1,7 @@
+<!-- Owner: Manideep Reddy Eevuri -->
+<!-- GitHub: https://github.com/Maniredii -->
+<!-- LinkedIn: https://www.linkedin.com/in/manideep-reddy-eevuri-661659268/ -->
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
